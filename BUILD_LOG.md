@@ -13,10 +13,10 @@ Pre-empt is a concept agent for Razorpay Agent Studio. It predicts which shipped
 
 | Tool | Model | What I used it for |
 |---|---|---|
-| Claude (Anthropic), chat and agent sessions | Claude Sonnet 5.5, Claude Opus 5 / 5.5 | Reading Razorpay's public AI pages; generating and stress-testing ideas; critiquing my deck against the rubric; checking facts against primary sources; auditing the economics in Python; drafting the product note, the prototype specification and the edit prompts; writing the video script and recording the walkthrough |
+| Claude (Anthropic), chat and agent sessions | Claude Sonnet 5.5, Claude Opus 5 / 5.5 | Reading Razorpay's public AI pages; generating and stress-testing ideas; critiquing my deck against the rubric; checking facts against primary sources; auditing the economics in Python; drafting the product note, the prototype specification and the edit prompts |
 | Gemini (Google) | Gemini app (version not recorded) | Independent second-opinion review of my deck; proposed the "soft ping" idea |
 | Claude Code (Anthropic) | Claude, in Claude Code | Building the React prototype from my specification, applying my revision prompts, deploying to Vercel and publishing this repo |
-| Playwright + ffmpeg, scripted by Claude | n/a | Recording the 90-second walkthrough from the live prototype, timed to my script. I recorded the voiceover myself |
+| Claude, Playwright, ffmpeg | n/a | Video: recorded from the live prototype with a scripted browser. Claude helped with the script, storyline and example numbers. I recorded the voiceover myself |
 
 ## 2. Workflow
 
@@ -28,7 +28,7 @@ Pre-empt is a concept agent for Razorpay Agent Studio. It predicts which shipped
 6. **Audit the numbers.** Rebuilt the economics in Python ([`economics_model.py`](economics_model.py)) with recall, precision, holdout, and base vs conservative cases. Made every number consistent across the one-pager, prototype and video.
 7. **Specify, build, review, revise.** Wrote a detailed specification (screens, synthetic data, interactions, demo path, acceptance checklist), built it in Claude Code, then reviewed every screen myself and sent a 48-item edit prompt rather than a rebuild.
 8. **Ship.** Claude Code built, deployed to Vercel, checked the public URL returned HTTP 200, scanned for secrets, and pushed this repo using my GitHub noreply email.
-9. **Video.** Claude ran the final prototype in a scripted browser and recorded two cuts on one timeline: a clean one, and one with my script as timed subtitles. Material that is not in the product (where Pre-empt sits, the AI-vs-rules split, the simulated customer reply, the 3-month projection) appears as labelled animated overlays. I read the subtitled cut aloud and laid the voiceover on the clean cut.
+9. **Video.** Recorded from the live prototype. Material that is not in the product (where Pre-empt sits, the AI-vs-rules split, the simulated customer reply, the 3-month projection) appears as labelled overlays. I recorded the voiceover myself.
 
 ## 3. Key prompts and agent setup (abridged)
 
@@ -39,7 +39,6 @@ Pre-empt is a concept agent for Razorpay Agent Studio. It predicts which shipped
 - "Criticise the prototype as much as you can. It should look realistic, without copying Razorpay's branding."
 - "Give me a prompt that makes all these changes in the most detailed manner. Don't rebuild."
 - "Build, deploy to Vercel production, check the URL is public, check nothing secret is committed, then publish a public repo."
-- "Run the prototype and record the walkthrough exactly as scripted, once with subtitles and once without, so I can add my voiceover."
 
 **Agent setup:** one long Claude session held the research, the decisions and the specification. Claude Code worked only inside the project folder, and every change went through a written prompt that I reviewed first. The prototype and all of its data are synthetic.
 
@@ -79,7 +78,7 @@ I had the figures audited. Razorpay's fee docs list the chargeback-stage fee as 
 | Audited the arithmetic and ran scenarios | Founder conversations; finding Money-Back Promise |
 | Drafted documents, the prototype spec and edit prompts | Reading the fee docs and the Promise terms myself |
 | Built, deployed and published the prototype (Claude Code) | Which critiques to accept, reject or modify |
-| Wrote the video script and recorded the walkthrough | Every screen review, plus the realism and branding calls |
+| Helped with the video script and example numbers | Every screen review, plus the realism and branding calls |
 | | Guardrails, exclusions, and where AI is and isn't used |
 | | Removing the "presenter mode" from the live prototype so the link shows exactly what a merchant would see, and moving pitch-only material into labelled video overlays |
 | | Final wording, numbers, the demo story and the voiceover |
