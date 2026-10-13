@@ -1,0 +1,111 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background: #f5f7fa;
+  font-family: Inter, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * Order detail rows adapt to the width of their own card, not the screen:
+ * in a wide column the label sits beside the bar / description; in a narrow
+ * column the label moves onto its own line so nothing gets squeezed.
+ */
+.cq {
+  container-type: inline-size;
+}
+.risk-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 48px;
+  column-gap: 12px;
+  row-gap: 4px;
+}
+.risk-row > .risk-label {
+  grid-column: 1 / -1;
+}
+.ai-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 4px;
+}
+@container (min-width: 400px) {
+  .risk-row {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) 48px;
+  }
+  .risk-row > .risk-label {
+    grid-column: auto;
+  }
+  .ai-row {
+    grid-template-columns: 170px minmax(0, 1fr);
+    column-gap: 12px;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+.fade-in { animation: fadeIn 0.35s ease-out both; }
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: none; }
+}
+.toast-in { animation: toastIn 0.25s ease-out both; }
+
+@keyframes drawerIn {
+  from { transform: translateX(100%); }
+  to { transform: none; }
+}
+.drawer-in { animation: drawerIn 0.25s ease-out both; }
+
+@keyframes barGrow {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+.bar-grow { animation: barGrow 0.7s ease-out both; }
+
+@keyframes rowNew {
+  from { background-color: #fef3c7; }
+  to { background-color: transparent; }
+}
+.row-new { animation: rowNew 2.5s ease-out both; }
+
+/* check animation */
+.check-circle {
+  stroke-dasharray: 151;
+  stroke-dashoffset: 151;
+  animation: draw 0.6s ease-out forwards;
+}
+.check-mark {
+  stroke-dasharray: 40;
+  stroke-dashoffset: 40;
+  animation: draw 0.35s 0.5s ease-out forwards;
+}
+.check-burst { animation: pop 0.5s 0.45s ease-out both; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+@keyframes pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+.line-draw {
+  stroke-dasharray: 1200;
+  stroke-dashoffset: 1200;
+  animation: draw 1.4s ease-out forwards;
+}
+
+input[type='number']::-webkit-inner-spin-button { opacity: 0.4; }
