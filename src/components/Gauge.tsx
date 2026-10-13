@@ -19,12 +19,10 @@ function Track() {
   );
 }
 
-export function DisputeGauge({ jan, showBlue, steady }: { jan: number; showBlue: boolean; steady: boolean }) {
-  const nowShown = useAnimatedNumber(steady ? ratio.steadyNow : ratio.current, 1000);
-  const blueVisible = showBlue || steady;
+export function DisputeGauge({ jan, showBlue }: { jan: number; showBlue: boolean }) {
   useEffect(() => {
-    if (!blueVisible) lastBlue = ratio.janWithout;
-  }, [blueVisible]);
+    if (!showBlue) lastBlue = ratio.janWithout;
+  }, [showBlue]);
   const ticks = [0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
 
   return (
@@ -36,7 +34,7 @@ export function DisputeGauge({ jan, showBlue, steady }: { jan: number; showBlue:
             <div className="h-12" />
             <div className="flex h-[72px] flex-col justify-center pr-4">
               <div className="text-xs font-semibold text-slate-800">Now</div>
-              <div className="text-[11px] text-slate-500">{steady ? 'Steady state (synthetic)' : 'Trailing 30 days'}</div>
+              <div className="text-[11px] text-slate-500">Trailing 30 days</div>
             </div>
             <div className="flex h-[104px] flex-col justify-center pr-4">
               <div className="flex items-center text-xs font-semibold text-slate-800">
@@ -71,22 +69,14 @@ export function DisputeGauge({ jan, showBlue, steady }: { jan: number; showBlue:
             {/* row 1: now */}
             <div className="relative h-[72px]">
               <Track />
-              <Marker
-                value={nowShown}
-                color="#0F1B2D"
-                label={steady ? `${pct(nowShown)} steady state (synthetic)` : `${pct(nowShown)} now`}
-                tier="above1"
-                strong={steady}
-                strongColor="text-slate-900"
-              />
+              <Marker value={ratio.current} color="#0F1B2D" label={`${pct(ratio.current)} now`} tier="above" />
             </div>
 
             {/* row 2: january projection */}
             <div className="relative h-[104px]">
               <Track />
               <Marker value={ratio.janWithout} color="#94A3B8" label={`${pct(ratio.janWithout)} without Pre-empt`} tier="below" />
-              {steady && <Marker value={ratio.steadyConservative} color="#2563EB" dashed label={`${pct(ratio.steadyConservative)} conservative`} tier="above1" />}
-              {blueVisible && <BlueMarker target={steady ? ratio.steadyBase : jan} steady={steady} />}
+              {showBlue && <BlueMarker target={jan} />}
             </div>
 
             {/* axis */}
@@ -104,46 +94,21 @@ export function DisputeGauge({ jan, showBlue, steady }: { jan: number; showBlue:
   );
 }
 
-function BlueMarker({ target, steady }: { target: number; steady: boolean }) {
+function BlueMarker({ target }: { target: number }) {
   const v = useAnimatedNumber(target, 1000, lastBlue);
   useEffect(() => {
     lastBlue = v;
   }, [v]);
-  return (
-    <Marker
-      value={v}
-      color="#2563EB"
-      label={`${pct(v)} with Pre-empt, ${steady ? 'steady state (synthetic)' : 'this week’s actions'}`}
-      tier={steady ? 'above2' : 'above1'}
-      strong
-    />
-  );
+  return <Marker value={v} color="#2563EB" label={`${pct(v)} with Pre-empt, this week’s actions`} tier="above" strong />;
 }
 
-type Tier = 'above1' | 'above2' | 'below';
+type Tier = 'above' | 'below';
 const tierClass: Record<Tier, string> = {
-  above1: 'bottom-[calc(50%+14px)]',
-  above2: 'bottom-[calc(50%+32px)]',
+  above: 'bottom-[calc(50%+14px)]',
   below: 'top-[calc(50%+14px)]',
 };
 
-function Marker({
-  value,
-  color,
-  label,
-  tier,
-  dashed,
-  strong,
-  strongColor = 'text-primary',
-}: {
-  value: number;
-  color: string;
-  label: string;
-  tier: Tier;
-  dashed?: boolean;
-  strong?: boolean;
-  strongColor?: string;
-}) {
+function Marker({ value, color, label, tier, strong }: { value: number; color: string; label: string; tier: Tier; strong?: boolean }) {
   const left = toPct(value);
   const edge = value > 1.6 ? 'right' : value < 0.25 ? 'left' : 'center';
   const labelAlign = edge === 'right' ? 'right-0 translate-x-2' : edge === 'left' ? 'left-0 -translate-x-2' : 'left-1/2 -translate-x-1/2';
@@ -152,15 +117,11 @@ function Marker({
       <Tooltip content={label} width={220}>
         <span
           className={cx('absolute top-1/2 block -translate-x-1/2 -translate-y-1/2 rounded-full', strong ? 'h-5 w-5 ring-4 ring-white' : 'h-4 w-4 ring-2 ring-white')}
-          style={{
-            background: dashed ? 'white' : color,
-            border: dashed ? `2px dashed ${color}` : undefined,
-            boxShadow: '0 1px 3px rgba(15,27,45,0.3)',
-          }}
+          style={{ background: color, boxShadow: '0 1px 3px rgba(15,27,45,0.3)' }}
           aria-label={label}
         />
       </Tooltip>
-      <div className={cx('absolute whitespace-nowrap text-xs', tierClass[tier], labelAlign, strong ? `font-semibold ${strongColor}` : 'font-medium text-slate-600')}>
+      <div className={cx('absolute whitespace-nowrap text-xs', tierClass[tier], labelAlign, strong ? 'font-semibold text-primary' : 'font-medium text-slate-600')}>
         <span className="tabular-nums">{label}</span>
       </div>
     </div>

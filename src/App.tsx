@@ -6,7 +6,6 @@ import { ReviewQueue } from './screens/ReviewQueue';
 import { OrderDetail } from './screens/OrderDetail';
 import { SoftPings } from './screens/SoftPings';
 import { Controls } from './screens/Controls';
-import { Impact } from './screens/Impact';
 import { AuditLog } from './screens/AuditLog';
 import { Tour } from './components/Tour';
 
@@ -52,8 +51,6 @@ function Screen() {
       return <SoftPings />;
     case 'controls':
       return <Controls />;
-    case 'impact':
-      return <Impact />;
     case 'audit':
       return <AuditLog />;
   }

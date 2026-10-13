@@ -40,10 +40,6 @@ export const ratio = {
   janCaption: 'Disputes from the Diwali sale land on January’s smaller volume.',
   footnote:
     'Proxy: card dispute ratio. Visa’s VAMP ratio also counts fraud reports, which Pre-empt does not address.',
-  steadyNow: 0.55,
-  steadyNowConservative: 0.68,
-  steadyBase: 1.17,
-  steadyConservative: 1.45,
 };
 
 export const last7Days = {
@@ -518,82 +514,6 @@ export const reviewQueue: QueueOrder[] = [
   },
 ];
 
-// Added to the review queue only when the ORD-48230 soft ping gets a "Not yet" reply.
-export const confirmedLateOrder: QueueOrder = {
-  id: 'ORD-48230',
-  amount: 1150,
-  method: 'Visa · credit',
-  customer: 'Ananya',
-  signals: ['Customer confirmed not received', 'Transit 5.2 days vs lane 90th percentile 5.0 days'],
-  pDispute: 0.6,
-  pWin: 0.25,
-  recommendedLabel: 'Delay update + ₹150 credit',
-  source: 'Model',
-  actBy: { when: 'Act today', reason: 'customer says not received', urgent: true, rank: 0 },
-  paidAt: '2026-10-01T18:22',
-  quickSignals: ['Customer says it hasn’t arrived', 'Parcel later than 91% of deliveries on this route'],
-  topSignal: 'Customer confirmed not received after soft ping',
-  paymentId: paymentIds['ORD-48230'],
-  recommendationReason: 'The customer told us it hasn’t arrived. Speak first, add a small credit.',
-  options: [
-    { id: 'none', label: 'Do nothing', kind: 'none', pAfter: 0.6, expectedCost: 698, actionCost: 0, janImpact: 0 },
-    {
-      id: 'msg',
-      label: 'Message only',
-      kind: 'message',
-      pAfter: 0.31,
-      expectedCost: 360,
-      actionCost: 0,
-      janImpact: -0.01,
-      message:
-        'Hi Ananya, thanks for letting us know. Your Fashion Tales order is delayed by our courier. New ETA: Fri 9 Oct. Team Fashion Tales',
-    },
-    {
-      id: 'msg_credit',
-      label: 'Message + ₹150 credit',
-      kind: 'credit',
-      pAfter: 0.1,
-      expectedCost: 266,
-      actionCost: 150,
-      refundAmount: 150,
-      janImpact: -0.02,
-      recommended: true,
-      approvedText: 'delay update + ₹150 credit',
-      message:
-        'Hi Ananya, thanks for letting us know. Your Fashion Tales order is delayed by our courier. New ETA: Fri 9 Oct. We’ve refunded ₹150 shipping to your card. Team Fashion Tales',
-    },
-    {
-      id: 'refund',
-      label: 'Full refund',
-      kind: 'refund',
-      pAfter: 0.0,
-      expectedCost: 1150,
-      actionCost: 1150,
-      refundAmount: 1150,
-      janImpact: -0.03,
-      message: 'Hi Ananya, sorry your Fashion Tales order is delayed. We’ve refunded ₹1,150 in full to your card. Team Fashion Tales',
-    },
-  ],
-  timeline: [
-    { when: 'Thu 1 Oct 18:22', text: 'Paid ₹1,150 · Visa · credit' },
-    { when: 'Thu 1 Oct 21:00', text: 'Dispatched via surface courier (BLR-560xx)' },
-    { when: 'Tue 6 Oct 15:10', text: 'Soft ping sent: “has your order arrived?”' },
-    { when: 'Simulated', text: 'Customer replied “Not yet” · confirmed late', tone: 'warn' },
-  ],
-  riskItems: [
-    { label: 'Base rate for eligible orders', value: 0.2, base: true },
-    { label: 'Customer confirmed not received', value: 0.28 },
-    { label: 'Transit at the 91st percentile', value: 0.12 },
-  ],
-  ai: [
-    { kind: 'Rules', used: true, text: 'Never-act checks passed.' },
-    { kind: 'Statistics', used: true, text: 'Transit at the 91st percentile for this courier lane.' },
-    { kind: 'Model', used: true, text: 'Dispute risk 60%, win chance 25%, odds after each action.' },
-    { kind: 'Language model', used: false, text: 'The reply was a quick-reply button, no free text.' },
-  ],
-  next: 'Pre-empt re-checks the courier scan in 24h. If still stuck, it recommends a re-ship or refund for your review.',
-};
-
 // Order detail extras for ORD-48213
 export const whyFlagged48213 = {
   winReasons: [
@@ -603,14 +523,9 @@ export const whyFlagged48213 = {
   ],
   promiseNote:
     'Money-Back Promise: not yet eligible (the seller has not rejected the customer). Resolving now keeps this order out of a Promise claim.',
-  fastForward: [
-    { when: 'Wed 7 Oct', text: 'Customer replied “ok thanks”', tone: 'ok' as const },
-    { when: 'Thu 8 Oct', text: 'Delivered', tone: 'ok' as const },
-    { when: 'Until Sun 27 Dec', text: 'Dispute watch open until Sun 27 Dec (90 days from payment)' },
-  ],
 };
 
-export type PingStatus = 'awaiting' | 'closed' | 'noreply' | 'confirmed_late' | 'noreply_scheduled';
+export type PingStatus = 'awaiting' | 'closed' | 'noreply';
 
 export interface SoftPing {
   id: string;
@@ -666,7 +581,6 @@ export const ping48230 = {
   pWin: 0.3,
   costDoNothing: 420,
   costWithPing: 164,
-  janImpactYes: -0.02,
 };
 
 export const pingGuardrails = [
@@ -718,35 +632,6 @@ export const neverAct = [
 export const holdoutInfo =
   '10% of flagged orders get no proactive action from Pre-empt. Normal merchant support continues. Pooled across merchants because one merchant’s holdout is too small to measure.';
 
-export const impact = {
-  holdoutRate: 33,
-  treatedRate: 15,
-  costHoldout: 356,
-  costTreated: 186,
-  weeks: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-  holdoutSeries: [33, 32, 34, 33, 35, 32, 31, 33, 34, 32, 33, 33],
-  treatedSeries: [30, 29, 27, 26, 24, 22, 21, 19, 18, 17, 16, 15],
-  scenarios: {
-    base: { card: '0.80% → 0.55%', jan: '1.70% → 1.17%', saving: 11568 },
-    conservative: { card: '0.80% → 0.68%', jan: '1.70% → 1.45%', saving: 4507 },
-  },
-  assumptions:
-    'Recall 75%, precision 33% (conservative 60%, 25%); November card volume 2.1x; chargeback-stage fee Nil per Razorpay docs.',
-  learning: [
-    { signal: 'Soft-ping reply', timing: 'minutes' },
-    { signal: 'Customer acknowledges message', timing: '≤ 72h' },
-    { signal: 'Delivery confirmed after delay flag', timing: '≤ 7 days' },
-    { signal: 'No new ticket after action', timing: '7 days' },
-    { signal: 'Merchant approvals and overrides', timing: 'weekly' },
-    { signal: 'Dispute filed or not (ground truth)', timing: '45 to 120 days' },
-  ],
-  killCriteria: [
-    'Pause if treated net cost exceeds holdout for 2 consecutive months.',
-    'Pause if soft-ping opt-outs or complaints exceed the agreed level.',
-    'Pause if merchants override more than 40% of recommendations.',
-  ],
-};
-
 export const MODEL_VERSION = 'Model v0.3 (synthetic)';
 
 export interface AuditEntry {
@@ -789,14 +674,6 @@ export const skipReasons = [
   'Customer is known to us',
   'Disagree with risk score',
   'Other',
-];
-
-export const funnel = [
-  { step: 'Checkout', tools: 'Magic Checkout (COD Intelligence), RTO Shielder' },
-  { step: 'Shipped', tools: 'Pre-empt', highlight: true },
-  { step: 'Complaint', tools: 'Money-Back Promise (only after the seller rejects the customer)' },
-  { step: 'Bank dispute', tools: 'Dispute Responder' },
-  { step: 'Resolution', tools: '' },
 ];
 
 // Percent values are whole numbers (50 = 50%).

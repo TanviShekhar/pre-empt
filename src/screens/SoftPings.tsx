@@ -1,7 +1,7 @@
 import { ping48230, pingGuardrails, type SoftPing } from '../data';
 import { inr, pc } from '../format';
 import { useStore } from '../store';
-import { Button, Card, Chip, ExpectedLossLabel, SectionTitle, WhatsAppBubble, cx } from '../components/ui';
+import { Card, Chip, ExpectedLossLabel, SectionTitle, WhatsAppBubble, cx } from '../components/ui';
 
 const statusChip = (p: SoftPing) => {
   switch (p.status) {
@@ -9,12 +9,8 @@ const statusChip = (p: SoftPing) => {
       return <Chip tone="amber">Awaiting reply</Chip>;
     case 'closed':
       return <Chip tone="green">Yes, received</Chip>;
-    case 'confirmed_late':
-      return <Chip tone="red">Not yet</Chip>;
     case 'noreply':
       return <Chip tone="grey">No reply (7h)</Chip>;
-    case 'noreply_scheduled':
-      return <Chip tone="grey">No reply (24h)</Chip>;
   }
 };
 
@@ -88,42 +84,10 @@ export function SoftPings() {
               </p>
             </Card>
           )}
-
-          {state.presenter && (
-            <p className="text-sm font-medium text-slate-700">Each reply is a label in minutes, so the model learns without waiting 90 days for a dispute.</p>
-          )}
         </div>
 
         <div className="min-w-0">
-          <Phone ping={sel} mockLabel={state.presenter} />
-          {state.presenter && sel.id === 'ORD-48230' && (
-            <div className="mt-6 rounded-card border-2 border-dashed border-slate-300 bg-[repeating-linear-gradient(135deg,#f8fafc_0,#f8fafc_8px,#f1f5f9_8px,#f1f5f9_16px)] p-4">
-              <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                <span aria-hidden>⚙</span> Demo control: simulate the customer&rsquo;s reply
-              </div>
-              <div className="grid gap-2">
-                <Button variant="secondary" disabled={sel.status !== 'awaiting'} onClick={() => dispatch({ type: 'pingReply', id: sel.id, reply: 'yes' })}>
-                  Yes, received
-                </Button>
-                <Button variant="secondary" disabled={sel.status !== 'awaiting'} onClick={() => dispatch({ type: 'pingReply', id: sel.id, reply: 'notyet' })}>
-                  Not yet
-                </Button>
-                <Button variant="secondary" disabled={sel.status !== 'awaiting'} onClick={() => dispatch({ type: 'pingReply', id: sel.id, reply: 'noreply' })}>
-                  No reply (24h)
-                </Button>
-              </div>
-              {sel.status !== 'awaiting' && (
-                <p className="mt-3 text-xs text-slate-500">
-                  Reply recorded.{' '}
-                  {sel.status === 'confirmed_late' && (
-                    <button className="font-medium text-primary hover:underline" onClick={() => dispatch({ type: 'nav', screen: 'queue' })}>
-                      Open review queue →
-                    </button>
-                  )}
-                </p>
-              )}
-            </div>
-          )}
+          <Phone ping={sel} />
         </div>
       </div>
     </div>
@@ -139,13 +103,13 @@ function Stat({ label, value, accent }: { label: React.ReactNode; value: string;
   );
 }
 
-function Phone({ ping, mockLabel }: { ping: SoftPing; mockLabel: boolean }) {
+function Phone({ ping }: { ping: SoftPing }) {
   const name = ping.customer ?? 'there';
   const num = ping.id.replace('ORD-', '');
   const sentTime = ping.sent.replace(' today', '');
   return (
     <figure className="mx-auto w-full max-w-[300px]">
-      <figcaption className="mb-2 text-center text-xs font-medium text-slate-500">WhatsApp Business message{mockLabel ? ' (mock)' : ''}</figcaption>
+      <figcaption className="mb-2 text-center text-xs font-medium text-slate-500">WhatsApp Business message</figcaption>
       <div className="rounded-[36px] border-[10px] border-navy bg-navy shadow-xl">
         <div className="overflow-hidden rounded-[26px] bg-[#ECE5DD]">
           <div className="flex items-center gap-2 bg-[#075E54] px-4 pb-2.5 pt-5 text-white">
@@ -174,12 +138,6 @@ function Phone({ ping, mockLabel }: { ping: SoftPing; mockLabel: boolean }) {
               </div>
             )}
             {ping.status === 'noreply' && <div className="text-center text-[11px] italic text-slate-500">No reply yet (7h) · status message at 09:40 tomorrow</div>}
-            {ping.status === 'noreply_scheduled' && (
-              <div className="fade-in text-center text-[11px] italic text-slate-500">No reply in 24h (simulated) · neutral status message scheduled</div>
-            )}
-            {ping.status === 'confirmed_late' && (
-              <div className="fade-in text-center text-[11px] italic text-slate-500">Moved to review queue · merchant decides on any credit</div>
-            )}
             {ping.status === 'closed' && <div className="fade-in text-center text-[11px] italic text-slate-500">Closed at ₹0 · courier scan marked stale</div>}
           </div>
         </div>

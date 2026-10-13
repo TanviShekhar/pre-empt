@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { merchant } from '../data';
 import { awaitingPings, pendingCount, useStore, type Screen } from '../store';
-import { Toggle, Tooltip, cx } from './ui';
+import { Tooltip, cx } from './ui';
 
 const productTabs = ['Payments', 'Banking+', 'Payroll', 'Agent Studio'];
 
@@ -101,7 +101,6 @@ const navItems: { screen: Screen; label: string }[] = [
   { screen: 'queue', label: 'Review queue' },
   { screen: 'pings', label: 'Soft pings' },
   { screen: 'controls', label: 'Controls' },
-  { screen: 'impact', label: 'Impact & learning' },
   { screen: 'audit', label: 'Audit log' },
 ];
 
@@ -111,7 +110,6 @@ const icons: Record<Screen, string> = {
   order: '',
   pings: 'M4 5h16v11H8l-4 4z',
   controls: 'M4 7h10M18 7h2M4 17h4M12 17h8M14 4v6M8 14v6',
-  impact: 'M4 19V5M4 19h16M8 15l4-4 3 3 5-6',
   audit: 'M6 3h9l4 4v14H6zM9 12h7M9 16h7M9 8h3',
 };
 
@@ -119,9 +117,7 @@ function useNav() {
   const { state, dispatch } = useStore();
   const badges: Partial<Record<Screen, number>> = { queue: pendingCount(state), pings: awaitingPings(state) };
   const active = state.screen === 'order' ? 'queue' : state.screen;
-  // Impact & learning is pitch material: hidden on clean merchant screens
-  const items = navItems.filter((n) => state.presenter || n.screen !== 'impact');
-  return { badges, active, items, go: (s: Screen) => dispatch({ type: 'nav', screen: s }) };
+  return { badges, active, items: navItems, go: (s: Screen) => dispatch({ type: 'nav', screen: s }) };
 }
 
 function Badge({ screen, n }: { screen: Screen; n?: number }) {
@@ -188,23 +184,9 @@ export function MobileTabs() {
 }
 
 export function Footer() {
-  const { state, dispatch } = useStore();
   return (
     <footer className="mt-10 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-slate-200 pt-4 text-xs text-slate-500">
       <span>Concept prototype for Razorpay Agent Studio by Tanvi Shekhar. Merchant, orders and figures are synthetic.</span>
-      <div className="flex items-center gap-4">
-        <Tooltip content="On: shows demo controls and pitch material. Off: clean merchant screens, as a real merchant would see them." width={260}>
-          <span className="flex items-center gap-2">
-            <span className="font-medium text-slate-600">Presenter mode</span>
-            <Toggle on={state.presenter} onChange={() => dispatch({ type: 'togglePresenter' })} label="Presenter mode" />
-          </span>
-        </Tooltip>
-        {state.presenter && (
-          <button onClick={() => dispatch({ type: 'reset' })} className="font-medium text-primary hover:underline">
-            Reset demo
-          </button>
-        )}
-      </div>
     </footer>
   );
 }

@@ -34,15 +34,7 @@ export function ReviewQueue() {
 
   return (
     <div>
-      <SectionTitle
-        sub={
-          state.presenter
-            ? 'Orders above your auto-approve thresholds. Nothing involving money happens without you. Same review you already do for flagged COD orders in Magic Checkout, now for prepaid orders after they ship.'
-            : 'Orders above your auto-approve thresholds. Nothing involving money happens without you.'
-        }
-      >
-        Review queue
-      </SectionTitle>
+      <SectionTitle sub="Orders above your auto-approve thresholds. Nothing involving money happens without you.">Review queue</SectionTitle>
 
       {state.paused && (
         <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800">
@@ -208,7 +200,6 @@ function Row({ row, onEdit }: { row: QueueRow; onEdit: () => void }) {
         row.status === 'approved' && 'bg-green-50 hover:bg-green-100/60',
         row.status === 'skipped' && 'bg-slate-50 text-slate-400 hover:bg-slate-100',
         row.status === 'pending' && 'hover:bg-slate-50',
-        row.isNew && row.status === 'pending' && 'row-new',
       )}
     >
       {/* Order */}
@@ -224,11 +215,6 @@ function Row({ row, onEdit }: { row: QueueRow; onEdit: () => void }) {
         </button>
         {/* non-breaking space before the dot so long methods wrap after it */}
         <div className="mt-0.5 text-xs leading-snug text-slate-500">{o.method.replace(' · ', ' · ')}</div>
-        {row.isNew && (
-          <Chip tone="amber" wrap className="mt-1.5 text-[11px]">
-            New · from soft ping
-          </Chip>
-        )}
       </td>
 
       {/* Signals */}

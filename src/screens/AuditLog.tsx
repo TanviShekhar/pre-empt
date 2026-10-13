@@ -37,7 +37,8 @@ export function AuditLog() {
                   <td className="px-3 py-3 text-slate-800">{a.action}</td>
                   <td className="px-3 py-3 text-xs text-slate-600">{a.why}</td>
                   <td className="px-3 py-3 text-xs text-slate-600">
-                    <div className="whitespace-nowrap">{state.presenter ? a.decidedBy : a.decidedBy.replace(' (synthetic)', '')}</div>
+                    {/* the on-screen label drops "(synthetic)"; the CSV export keeps the full value */}
+                    <div className="whitespace-nowrap">{a.decidedBy.replace(' (synthetic)', '')}</div>
                     {a.method && (
                       <div className="mt-1 flex flex-wrap gap-1">
                         {a.method.split(' · ').map((m) => (

@@ -1,12 +1,9 @@
 import { createContext, useContext, useReducer, type Dispatch, type ReactNode } from 'react';
 import {
-  confirmedLateOrder,
   defaultThresholds,
   DEMO_START_MIN,
   isUPI,
   methodOf,
-  paymentIds,
-  ping48230,
   ratio,
   reviewQueue,
   seedAudit,
@@ -22,7 +19,7 @@ import {
 } from './data';
 import { hhmm, inr, pc, pct } from './format';
 
-export type Screen = 'overview' | 'queue' | 'order' | 'pings' | 'controls' | 'impact' | 'audit';
+export type Screen = 'overview' | 'queue' | 'order' | 'pings' | 'controls' | 'audit';
 export type Mode = 'recommend' | 'review' | 'auto';
 export type QueueSort = 'saved' | 'urgency' | 'risk' | 'value' | 'newest' | 'oldest';
 export type QueueFilter = 'all' | 'pending' | 'done';
@@ -49,7 +46,6 @@ export interface QueueRow {
   time?: string;
   optionId?: string;
   skipReason?: string;
-  isNew?: boolean;
 }
 
 export interface Toast {
@@ -69,13 +65,11 @@ export interface State {
   pings: SoftPing[];
   selectedPing: string;
   janHundredths: number; // January projection with Pre-empt, in hundredths of a percent
-  steady: boolean;
   spendWeek: number;
   spendToday: number;
   audit: AuditEntry[];
   overrides: number;
   clockMin: number;
-  fastForwarded: Record<string, boolean>;
   thresholds: Thresholds;
   changedSettings: Partial<Record<ThresholdKey, boolean>>;
   saleMode: boolean;
@@ -85,7 +79,6 @@ export interface State {
   queueFilter: QueueFilter;
   tour: TourState;
   tourPromptDismissed: boolean;
-  presenter: boolean; // on: demo controls + pitch material visible; off: clean merchant screens
   toasts: Toast[];
   toastSeq: number;
 }
@@ -99,13 +92,11 @@ export const initialState = (): State => ({
   pings: softPings.map((p) => ({ ...p })),
   selectedPing: 'ORD-48230',
   janHundredths: Math.round(ratio.janWithout * 100),
-  steady: false,
   spendWeek: spend.weekStart,
   spendToday: spend.todayStart,
   audit: [...seedAudit],
   overrides: 0,
   clockMin: DEMO_START_MIN,
-  fastForwarded: {},
   thresholds: { ...defaultThresholds },
   changedSettings: {},
   saleMode: false,
@@ -115,7 +106,6 @@ export const initialState = (): State => ({
   queueFilter: 'all',
   tour: { active: false, step: 0, returnScreen: 'overview', returnOrderId: null },
   tourPromptDismissed: false,
-  presenter: true,
   toasts: [],
   toastSeq: 0,
 });
@@ -129,9 +119,6 @@ export type Action =
   | { type: 'togglePause' }
   | { type: 'setMode'; mode: Mode }
   | { type: 'selectPing'; id: string }
-  | { type: 'pingReply'; id: string; reply: 'yes' | 'notyet' | 'noreply' }
-  | { type: 'setSteady'; on: boolean }
-  | { type: 'fastForward'; orderId: string }
   | { type: 'setThreshold'; key: ThresholdKey; value: number | boolean }
   | { type: 'toggleSaleMode' }
   | { type: 'laneOverride'; lane: string; p90: number }
@@ -143,10 +130,8 @@ export type Action =
   | { type: 'tourStep'; step: number }
   | { type: 'endTour' }
   | { type: 'dismissTourPrompt' }
-  | { type: 'togglePresenter' }
   | { type: 'toast'; text: string; tone?: Toast['tone'] }
-  | { type: 'dismissToast'; id: number }
-  | { type: 'reset' };
+  | { type: 'dismissToast'; id: number };
 
 // ---------- helpers shared with the screens ----------
 
@@ -370,73 +355,6 @@ function reducer(s: State, a: Action): State {
     case 'selectPing':
       return { ...s, selectedPing: a.id };
 
-    case 'pingReply': {
-      const ping = s.pings.find((p) => p.id === a.id);
-      if (!ping || ping.status !== 'awaiting') return s;
-      const { clockMin, time } = tick(s);
-      const pay = paymentIds[a.id] ?? '—';
-      const why = 'Customer reply to soft ping (simulated)';
-      if (a.reply === 'yes') {
-        const janHundredths = s.janHundredths + Math.round(ping48230.janImpactYes * 100);
-        const next: State = {
-          ...s,
-          clockMin,
-          janHundredths,
-          pings: s.pings.map((p) =>
-            p.id === a.id
-              ? { ...p, status: 'closed', statusText: 'Closed at ₹0 · courier scan marked stale · lane baseline BLR-560xx updated', reply: 'Yes, received', replyTime: 'simulated' }
-              : p,
-          ),
-          audit: log(
-            s,
-            { actor: 'Customer', order: a.id, action: 'Reply “Yes, received” · closed at ₹0 · lane baseline BLR-560xx updated', amount: 0, paymentId: pay, why, decidedBy: 'Rule', method: 'Rule' },
-            time,
-          ),
-        };
-        return withToast(
-          next,
-          `Resolved at ₹0. Courier scan marked stale; lane baseline BLR-560xx updated. January projection ${pct(s.janHundredths / 100)} → ${pct(janHundredths / 100)}.`,
-        );
-      }
-      if (a.reply === 'notyet') {
-        const next: State = {
-          ...s,
-          clockMin,
-          pings: s.pings.map((p) =>
-            p.id === a.id ? { ...p, status: 'confirmed_late', statusText: 'Confirmed late · added to your review queue', reply: 'Not yet', replyTime: 'simulated' } : p,
-          ),
-          queue: [...s.queue, { order: confirmedLateOrder, status: 'pending', isNew: true }],
-          audit: log(
-            s,
-            { actor: 'Customer', order: a.id, action: 'Reply “Not yet” · confirmed late · added to review queue', amount: null, paymentId: pay, why, decidedBy: 'Rule', method: 'Rule' },
-            time,
-          ),
-        };
-        return withToast(next, 'Confirmed by customer. Added to your review queue.', 'info');
-      }
-      const next: State = {
-        ...s,
-        clockMin,
-        pings: s.pings.map((p) => (p.id === a.id ? { ...p, status: 'noreply_scheduled', statusText: 'Status message scheduled · no money' } : p)),
-        audit: log(
-          s,
-          { actor: 'Pre-empt', order: a.id, action: 'No reply in 24h · status message scheduled, no money', amount: null, paymentId: pay, why: 'No reply to soft ping in 24h (simulated)', decidedBy: 'Rule', method: 'Rule' },
-          time,
-        ),
-      };
-      return withToast(
-        next,
-        'No reply in 24h. Silence is weak evidence (most people ignore pings), so Pre-empt sends a neutral status message and spends nothing.',
-        'info',
-      );
-    }
-
-    case 'setSteady':
-      return { ...s, steady: a.on };
-
-    case 'fastForward':
-      return { ...s, fastForwarded: { ...s.fastForwarded, [a.orderId]: true } };
-
     case 'setThreshold': {
       const from = s.thresholds[a.key];
       if (from === a.value) return s;
@@ -527,25 +445,11 @@ function reducer(s: State, a: Action): State {
     case 'dismissTourPrompt':
       return { ...s, tourPromptDismissed: true };
 
-    case 'togglePresenter': {
-      const presenter = !s.presenter;
-      // pitch-only views can't stay open once they're hidden
-      const screen = !presenter && s.screen === 'impact' ? 'overview' : s.screen;
-      return withToast(
-        { ...s, presenter, screen, steady: presenter ? s.steady : false },
-        presenter ? 'Presenter mode on: demo controls and pitch material are shown.' : 'Presenter mode off: showing clean merchant screens.',
-        'info',
-      );
-    }
-
     case 'toast':
       return withToast(s, a.text, a.tone);
 
     case 'dismissToast':
       return { ...s, toasts: s.toasts.filter((t) => t.id !== a.id) };
-
-    case 'reset':
-      return withToast({ ...initialState(), presenter: s.presenter }, 'Demo reset.', 'info');
   }
 }
 

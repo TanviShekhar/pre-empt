@@ -1,8 +1,8 @@
-import { funnel, holdoutInfo, impact, last7Days, ratio } from '../data';
+import { last7Days, ratio } from '../data';
 import { inr, pct } from '../format';
 import { janValue, moneyAtRisk, pendingCount, useStore } from '../store';
 import { DisputeGauge } from '../components/Gauge';
-import { Button, Card, InfoTip, SectionTitle, useAnimatedNumber, cx } from '../components/ui';
+import { Button, Card, InfoTip, SectionTitle } from '../components/ui';
 
 export function Overview() {
   const { state, dispatch } = useStore();
@@ -11,8 +11,6 @@ export function Overview() {
   const pending = pendingCount(state);
   const weeklyCap = state.thresholds.weeklyCap * (state.saleMode ? 2 : 1);
   const money = moneyAtRisk(state);
-  const nowShown = useAnimatedNumber(state.steady ? ratio.steadyNow : ratio.current, 1000);
-  const janShown = state.steady ? ratio.steadyBase : jan;
 
   return (
     <div className="space-y-6">
@@ -54,27 +52,20 @@ export function Overview() {
           </div>
           <div className="flex flex-wrap items-start gap-8">
             <div className="sm:text-right">
-              <div className="text-[11px] font-medium uppercase tracking-wider text-slate-500">{state.steady ? 'Now, steady state' : 'Now'}</div>
-              <div className={cx('text-5xl font-semibold tabular-nums tracking-tight', state.steady ? 'text-warn' : 'text-slate-900')}>{pct(nowShown)}</div>
-              {state.steady ? (
-                <>
-                  <div className="mt-1 text-xs font-medium text-warn">Below the 0.7% Excessive line (steady state, synthetic)</div>
-                  <div className="mt-0.5 text-[11px] text-slate-500">Conservative: {pct(ratio.steadyNowConservative)}</div>
-                </>
-              ) : (
-                <div className="mt-1 text-xs font-medium text-risk">Above the 0.7% Excessive line</div>
-              )}
+              <div className="text-[11px] font-medium uppercase tracking-wider text-slate-500">Now</div>
+              <div className="text-5xl font-semibold tabular-nums tracking-tight text-slate-900">{pct(ratio.current)}</div>
+              <div className="mt-1 text-xs font-medium text-risk">Above the 0.7% Excessive line</div>
             </div>
             <div className="max-w-[240px] sm:text-right">
-              {showBlue || state.steady ? (
+              {showBlue ? (
                 <>
                   <div className="flex items-center text-[11px] font-medium uppercase tracking-wider text-slate-500 sm:justify-end">
                     January, projected
                     <InfoTip content={ratio.janTooltip} />
                   </div>
-                  <div className="text-3xl font-semibold tabular-nums text-primary">{pct(janShown)}</div>
+                  <div className="text-3xl font-semibold tabular-nums text-primary">{pct(jan)}</div>
                   <div className="mt-0.5 text-xs text-slate-600">
-                    with Pre-empt{state.steady ? ', steady state (synthetic)' : ''} · <span className="font-medium text-risk">{pct(ratio.janWithout)} no action</span>
+                    with Pre-empt · <span className="font-medium text-risk">{pct(ratio.janWithout)} no action</span>
                   </div>
                 </>
               ) : (
@@ -92,26 +83,9 @@ export function Overview() {
         </div>
 
         <div className="mt-6">
-          <DisputeGauge jan={jan} showBlue={showBlue} steady={state.steady} />
+          <DisputeGauge jan={jan} showBlue={showBlue} />
         </div>
 
-        {state.presenter && (
-        <div className="mt-5 flex flex-wrap items-center gap-4">
-          {!state.steady ? (
-            <Button onClick={() => dispatch({ type: 'setSteady', on: true })}>Project steady state (3 months, synthetic)</Button>
-          ) : (
-            <Button variant="secondary" onClick={() => dispatch({ type: 'setSteady', on: false })}>
-              Back to this week&rsquo;s actions
-            </Button>
-          )}
-          {state.steady && (
-            <p className="fade-in max-w-3xl text-sm text-slate-700">
-              If Fashion Tales&rsquo; next three months look like this week, January lands at <b className="text-primary">1.17%</b> instead of{' '}
-              <b>1.70%</b>, and today&rsquo;s ratio falls to <b>0.55%</b>. <span className="text-slate-500">Synthetic projection.</span>
-            </p>
-          )}
-        </div>
-        )}
         <p className="mt-5 border-t border-slate-100 pt-3 text-xs text-slate-500">{ratio.footnote}</p>
       </Card>
 
@@ -146,65 +120,6 @@ export function Overview() {
           </div>
         </div>
       </div>
-
-      {/* Pitch material below: shown only in presenter mode */}
-      {state.presenter && (
-      <>
-      <Card title="Where Pre-empt sits">
-        <ol className="flex flex-col items-stretch gap-2 min-[700px]:flex-row">
-          {funnel.map((f, i) => (
-            <li
-              key={f.step}
-              className={cx(
-                'flex flex-col items-stretch gap-2 min-[700px]:flex-row min-[700px]:items-center',
-                f.step === 'Complaint' ? 'min-[700px]:flex-[1.7]' : f.step === 'Checkout' ? 'min-[700px]:flex-[1.5]' : 'min-[700px]:flex-1',
-              )}
-            >
-              <div
-                className={cx(
-                  'flex h-full flex-1 flex-col rounded-lg border p-3',
-                  f.highlight ? 'border-primary bg-blue-50 ring-2 ring-blue-100' : 'border-slate-200 bg-slate-50',
-                )}
-              >
-                <div className={cx('text-[11px] font-semibold uppercase tracking-wider', f.highlight ? 'text-primary' : 'text-slate-500')}>{f.step}</div>
-                <div className={cx('mt-1 leading-snug', f.tools.length <= 20 ? 'whitespace-nowrap' : '[text-wrap:balance]', f.highlight ? 'text-sm font-semibold text-primary' : 'text-xs text-slate-700')}>
-                  {f.tools || <span className="text-slate-400">Bank decides</span>}
-                </div>
-              </div>
-              {i < funnel.length - 1 && (
-                <span className="self-center text-slate-300" aria-hidden>
-                  <span className="min-[700px]:hidden">↓</span>
-                  <span className="hidden min-[700px]:inline">→</span>
-                </span>
-              )}
-            </li>
-          ))}
-        </ol>
-        <p className="mt-4 text-sm font-medium text-slate-700">
-          Checkout tools stop risky orders before they ship. After shipping, every existing tool waits for the customer to complain. Pre-empt acts first.
-        </p>
-      </Card>
-
-      <Card title={<span className="flex items-center">Measured against holdout<InfoTip content={holdoutInfo} width={300} /></span>}>
-        <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
-          <div className="flex items-end gap-6">
-            <div>
-              <div className="text-xs text-slate-500">Holdout</div>
-              <div className="text-3xl font-semibold tabular-nums text-slate-500">{impact.holdoutRate}%</div>
-            </div>
-            <div className="pb-2 text-slate-300">vs</div>
-            <div>
-              <div className="text-xs text-slate-500">Treated</div>
-              <div className="text-3xl font-semibold tabular-nums text-ok">{impact.treatedRate}%</div>
-            </div>
-          </div>
-          <p className="min-w-0 flex-1 basis-64 text-sm text-slate-600">
-            Flagged orders that later disputed: holdout 33% vs treated 15% <span className="text-slate-500">(pooled across merchants, illustrative)</span>
-          </p>
-        </div>
-      </Card>
-      </>
-      )}
     </div>
   );
 }

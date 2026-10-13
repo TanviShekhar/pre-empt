@@ -63,15 +63,7 @@ export function Controls() {
 
   return (
     <div>
-      <SectionTitle
-        sub={
-          state.presenter
-            ? 'You set the risk appetite. The model owns the inference.'
-            : 'Choose when Pre-empt acts on its own, how much it can spend, and the rules it never breaks.'
-        }
-      >
-        Controls
-      </SectionTitle>
+      <SectionTitle sub="Choose when Pre-empt acts on its own, how much it can spend, and the rules it never breaks.">Controls</SectionTitle>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="min-w-0 space-y-6">

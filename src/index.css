@@ -35,21 +35,12 @@ body {
 .risk-row > .risk-label {
   grid-column: 1 / -1;
 }
-.ai-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  row-gap: 4px;
-}
 @container (min-width: 400px) {
   .risk-row {
     grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) 48px;
   }
   .risk-row > .risk-label {
     grid-column: auto;
-  }
-  .ai-row {
-    grid-template-columns: 170px minmax(0, 1fr);
-    column-gap: 12px;
   }
 }
 
@@ -77,12 +68,6 @@ body {
 }
 .bar-grow { animation: barGrow 0.7s ease-out both; }
 
-@keyframes rowNew {
-  from { background-color: #fef3c7; }
-  to { background-color: transparent; }
-}
-.row-new { animation: rowNew 2.5s ease-out both; }
-
 /* check animation */
 .check-circle {
   stroke-dasharray: 151;
@@ -102,10 +87,5 @@ body {
   100% { transform: scale(1); }
 }
 
-.line-draw {
-  stroke-dasharray: 1200;
-  stroke-dashoffset: 1200;
-  animation: draw 1.4s ease-out forwards;
-}
 
 input[type='number']::-webkit-inner-spin-button { opacity: 0.4; }

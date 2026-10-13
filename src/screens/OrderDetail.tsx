@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { isUPI, whyFlagged48213, type AiRow, type QueueOrder, type TimelineEvent } from '../data';
+import { isUPI, whyFlagged48213, type QueueOrder, type TimelineEvent } from '../data';
 import { inr, pc, points } from '../format';
 import { actionLabel, doneLabel, isOptionBlocked, recOf, useStore, type QueueRow } from '../store';
 import { ActByChip, LossFigure, RiskAbuseChip, SkipButton, UnblockLink } from '../components/QueueActions';
@@ -56,12 +56,8 @@ const toneDot: Record<NonNullable<TimelineEvent['tone']>, string> = {
 };
 
 function Timeline({ row }: { row: QueueRow }) {
-  const { state, dispatch } = useStore();
   const o = row.order;
   const chosen = o.options.find((x) => x.id === row.optionId);
-  // Fast-forward and its simulated outcome are demo-only
-  const ff = state.presenter && state.fastForwarded[o.id];
-  const canFF = state.presenter && o.id === 'ORD-48213' && row.status === 'approved';
 
   return (
     <Card title="Timeline">
@@ -73,32 +69,12 @@ function Timeline({ row }: { row: QueueRow }) {
           <Event e={{ when: `Tue 6 Oct ${row.time}`, text: `Merchant approved: ${chosen.approvedText ?? chosen.label.toLowerCase()}`, tone: 'ok' }} fresh />
         )}
         {row.status === 'skipped' && <Event e={{ when: `Tue 6 Oct ${row.time}`, text: `Merchant skipped · ${row.skipReason}` }} fresh />}
-        {ff && (
-          <li className="fade-in mb-1 ml-5 mt-4">
-            <Chip tone="amber">Simulated outcome</Chip>
-          </li>
-        )}
-        {ff && whyFlagged48213.fastForward.map((e, i) => <Event key={`ff${i}`} e={e} fresh simulated />)}
       </ol>
-      {canFF && !ff && (
-        <button
-          onClick={() => dispatch({ type: 'fastForward', orderId: o.id })}
-          className="fade-in mt-4 flex w-full flex-col items-center rounded-lg px-3 py-2 text-center ring-1 ring-inset ring-slate-300 transition-colors hover:bg-slate-50"
-        >
-          <span className="flex items-center gap-1.5 text-sm font-medium text-slate-800">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden className="text-primary">
-              <path d="M3 5.5v13l8.5-6.5L3 5.5zm9 0v13l8.5-6.5L12 5.5z" />
-            </svg>
-            Fast-forward 2 days
-          </span>
-          <span className="text-[11px] text-slate-500">(simulated)</span>
-        </button>
-      )}
     </Card>
   );
 }
 
-function Event({ e, fresh, simulated }: { e: TimelineEvent; fresh?: boolean; simulated?: boolean }) {
+function Event({ e, fresh }: { e: TimelineEvent; fresh?: boolean }) {
   if (e.muted)
     return (
       <li className="relative -mt-2 mb-4 ml-5 text-[12px] italic leading-snug text-slate-500">
@@ -107,15 +83,9 @@ function Event({ e, fresh, simulated }: { e: TimelineEvent; fresh?: boolean; sim
     );
   return (
     <li className={cx('relative mb-4 ml-5 last:mb-0', fresh && 'fade-in')}>
-      <span
-        className={cx(
-          'absolute -left-[25.5px] top-0 mt-1.5 h-2.5 w-2.5 rounded-full ring-4 ring-white',
-          toneDot[e.tone ?? 'default'],
-          simulated && 'border border-dashed border-amber-500 bg-white',
-        )}
-      />
+      <span className={cx('absolute -left-[25.5px] top-0 mt-1.5 h-2.5 w-2.5 rounded-full ring-4 ring-white', toneDot[e.tone ?? 'default'])} />
       <div className="text-[11px] font-medium tabular-nums text-slate-500">{e.when}</div>
-      <div className={cx('text-[13px] leading-snug', simulated ? 'italic text-slate-600' : 'text-slate-800')}>{e.text}</div>
+      <div className="text-[13px] leading-snug text-slate-800">{e.text}</div>
     </li>
   );
 }
@@ -129,7 +99,6 @@ function WhyFlagged({ order }: { order: QueueOrder }) {
   });
   const scale = (v: number) => `${v * 100}%`;
   const is48213 = order.id === 'ORD-48213';
-  const { state } = useStore();
 
   return (
     <>
@@ -148,8 +117,7 @@ function WhyFlagged({ order }: { order: QueueOrder }) {
         right={
           <span className="flex items-center whitespace-nowrap text-xs text-slate-500">
             How the risk adds up
-            {/* clean mode: the method note becomes a hover icon instead of a caption */}
-            {!state.presenter && order.riskCaption && <InfoTip content={order.riskCaption} width={280} />}
+            {order.riskCaption && <InfoTip content={order.riskCaption} width={280} />}
           </span>
         }
       >
@@ -179,7 +147,6 @@ function WhyFlagged({ order }: { order: QueueOrder }) {
             <div className="text-right text-[15px] font-bold tabular-nums text-slate-900">{pc(order.pDispute)}</div>
           </div>
         </div>
-        {state.presenter && order.riskCaption && <p className="mt-3 text-[11px] text-slate-500">{order.riskCaption}</p>}
       </Card>
       </div>
 
@@ -212,44 +179,7 @@ function WhyFlagged({ order }: { order: QueueOrder }) {
           )}
         </Card>
       )}
-
-      {/* pitch material: in clean mode this detail lives in the Audit log's Method line */}
-      {state.presenter && <AiBox rows={order.ai} />}
     </>
-  );
-}
-
-const aiKindLabel: Record<AiRow['kind'], string> = {
-  Rules: 'Rules (no AI needed)',
-  Statistics: 'Statistics',
-  Model: 'Model (machine learning)',
-  'Language model': 'Language model',
-};
-
-function AiBox({ rows }: { rows: AiRow[] }) {
-  return (
-    <Card title="What’s AI here, and what’s a rule">
-      <dl className="cq divide-y divide-slate-100 text-[12.5px]">
-        {rows.map((r) => (
-          <div key={r.kind} className="ai-row py-2">
-            <dt className={cx('flex items-center gap-2 font-semibold', r.used ? 'text-slate-800' : 'text-slate-400')}>
-              {aiKindLabel[r.kind]}
-            </dt>
-            <dd className={cx('flex flex-wrap items-start gap-2', r.used ? 'text-slate-700' : 'text-slate-400')}>
-              <span
-                className={cx(
-                  'shrink-0 rounded px-1.5 py-px text-[10px] font-semibold uppercase tracking-wider',
-                  r.used ? 'bg-green-50 text-green-700' : 'bg-slate-100 text-slate-400',
-                )}
-              >
-                {r.used ? 'Used' : 'Not used'}
-              </span>
-              <span className="min-w-0 flex-1">{r.text}</span>
-            </dd>
-          </div>
-        ))}
-      </dl>
-    </Card>
   );
 }
 
@@ -293,8 +223,7 @@ function ChooseAction({ row }: { row: QueueRow }) {
           </div>
           {chosen.refundAmount ? (
             <div className="mt-2 text-xs text-slate-500">
-              {inr(chosen.refundAmount)} issued as a Razorpay {chosen.refundAmount < o.amount ? 'partial ' : ''}refund against {o.paymentId}
-              {state.presenter ? ' (synthetic)' : ''}.
+              {inr(chosen.refundAmount)} issued as a Razorpay {chosen.refundAmount < o.amount ? 'partial ' : ''}refund against {o.paymentId}.
             </div>
           ) : null}
         </div>
@@ -407,8 +336,7 @@ function ChooseAction({ row }: { row: QueueRow }) {
 
       {opt.refundAmount ? (
         <p className="mt-2 text-xs text-slate-500">
-          {inr(opt.refundAmount)} issued as a Razorpay {opt.refundAmount < o.amount ? 'partial ' : ''}refund against {o.paymentId}
-          {state.presenter ? ' (synthetic)' : ''}.
+          {inr(opt.refundAmount)} issued as a Razorpay {opt.refundAmount < o.amount ? 'partial ' : ''}refund against {o.paymentId}.
         </p>
       ) : null}
 
